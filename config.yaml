@@ -1,0 +1,27 @@
+host: ""
+port: 8317
+
+remote-management:
+  allow-remote: true
+  # 明文写在这里，CPA 第一次启动时会自动替换成 bcrypt 哈希。
+  secret-key: "改成你自己的管理密钥"
+  disable-control-panel: false
+  # 面板版本必须跟 CPA 主程序匹配，关掉自动更新避免被升到不兼容的版本。
+  disable-auto-update-panel: true
+
+auth-dir: "/root/.cli-proxy-api"
+
+api-keys:
+  - "改成你自己的 API key"
+
+debug: false
+logging-to-file: true
+request-retry: 3
+
+plugins:
+  enabled: true
+  dir: "/opt/cpa/plugins"
+  configs:
+    hark:
+      enabled: true
+      priority: 100
