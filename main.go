@@ -269,7 +269,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 	case pluginabi.MethodPluginQuiesce:
 		return okEnvelope(struct{}{})
 	case pluginabi.MethodModelStatic:
-		return okEnvelope(pluginapi.ModelResponse{Provider: providerName, Models: []pluginapi.ModelInfo{harkModel()}})
+		return okEnvelope(pluginapi.ModelResponse{Provider: providerName, Models: harkModels()})
 	case pluginabi.MethodModelForAuth:
 		return handleModelsForAuth(request)
 	case pluginabi.MethodAuthIdentifier:
@@ -317,19 +317,32 @@ func registration() map[string]any {
 	}
 }
 
-func harkModel() pluginapi.ModelInfo {
-	return pluginapi.ModelInfo{
-		ID:                         modelID,
-		Object:                     "model",
-		OwnedBy:                    providerName,
-		DisplayName:                "Hark",
-		Name:                       modelID,
-		InputTokenLimit:            modelInLim,
-		OutputTokenLimit:           modelOutLim,
-		ContextLength:              modelInLim,
-		MaxCompletionTokens:        modelOutLim,
-		SupportedGenerationMethods: []string{"chat-completions"},
+// modelAliases lists every id a client might send for this model. Claude Code
+// asks for the bare id, but also resolves "opus" to a short name and sometimes
+// appends a dated snapshot suffix. All of them hit the same hark account.
+var modelAliases = []string{
+	modelID,
+	"claude-opus-5",
+	"claude-opus-5-5-20250922",
+}
+
+func harkModels() []pluginapi.ModelInfo {
+	out := make([]pluginapi.ModelInfo, 0, len(modelAliases))
+	for _, id := range modelAliases {
+		out = append(out, pluginapi.ModelInfo{
+			ID:                         id,
+			Object:                     "model",
+			OwnedBy:                    providerName,
+			DisplayName:                "Hark",
+			Name:                       id,
+			InputTokenLimit:            modelInLim,
+			OutputTokenLimit:           modelOutLim,
+			ContextLength:              modelInLim,
+			MaxCompletionTokens:        modelOutLim,
+			SupportedGenerationMethods: []string{"chat-completions"},
+		})
 	}
+	return out
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +360,7 @@ func handleModelsForAuth(raw []byte) ([]byte, error) {
 		// routes around it instead of sending traffic that would 401.
 		return okEnvelope(pluginapi.ModelResponse{Provider: providerName})
 	}
-	return okEnvelope(pluginapi.ModelResponse{Provider: providerName, Models: []pluginapi.ModelInfo{harkModel()}})
+	return okEnvelope(pluginapi.ModelResponse{Provider: providerName, Models: harkModels()})
 }
 
 func handleParseAuth(raw []byte) ([]byte, error) {
